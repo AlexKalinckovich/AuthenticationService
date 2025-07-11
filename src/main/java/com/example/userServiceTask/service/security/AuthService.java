@@ -1,16 +1,16 @@
 package com.example.userServiceTask.service.security;
 
+import com.example.dto.user.CreateUserDto;
+import com.example.dto.user.UserResponseDto;
+import com.example.service.UserService;
 import com.example.userServiceTask.dto.security.AuthResponse;
 import com.example.userServiceTask.dto.security.LoginRequest;
 import com.example.userServiceTask.dto.security.RefreshTokenRequest;
 import com.example.userServiceTask.dto.security.RegisterRequest;
-import com.example.userServiceTask.dto.user.CreateUserDto;
-import com.example.userServiceTask.dto.user.UserResponseDto;
 import com.example.userServiceTask.model.auth.UserCredentials;
 import com.example.userServiceTask.model.auth.UserRole;
 import com.example.userServiceTask.repositories.auth.UserCredentialsRepository;
 import com.example.userServiceTask.security.JwtUtil;
-import com.example.userServiceTask.service.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

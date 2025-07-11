@@ -1,16 +1,11 @@
+server:
+  port: 8081
+
 spring:
   config:
-
     import: classpath:security.properties, classpath:error_message.properties
   application:
-    name: userServiceTask
-
-  datasource:
-    name: userDataSource
-    url: jdbc:mysql://localhost:3306/userdb?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: wtpassword
+    name: authentication-service
 
   auth-datasource:
     name: authDataSource
@@ -31,9 +26,6 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/changelog-master.xml
 
-  cache:
-    type: redis
-  data:
-    redis:
-      port: 6379
-      host: localhost
+user:
+  service:
+    url: ${USER_SERVICE_URL:http://user-service:8080}
