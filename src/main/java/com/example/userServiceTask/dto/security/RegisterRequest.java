@@ -1,6 +1,5 @@
 package com.example.userServiceTask.dto.security;
 
-import com.example.dto.user.CreateUserDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,6 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegisterRequest {
-    private CreateUserDto user;
+    private Long userId;
+    private String email;
     private String passwordHash;
 }
