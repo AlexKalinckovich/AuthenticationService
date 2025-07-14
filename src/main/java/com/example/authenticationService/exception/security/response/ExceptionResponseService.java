@@ -10,9 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.WebRequest;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -48,21 +46,6 @@ public class ExceptionResponseService {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setStatus(status.value());
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
-    }
-
-    public ResponseEntity<ErrorResponse> buildWebRequestErrorResponse(final Exception ex,
-                                                                      final WebRequest request,
-                                                                      final HttpStatus status,
-                                                                      final String message){
-        final ErrorResponse errorResponse = new ErrorResponse(
-                Instant.now(),
-                status.value(),
-                message,
-                request.getDescription(false),
-                Map.of(messageService.getMessage(ErrorMessage.ERROR_KEY), ex.getMessage())
-        );
-
-        return new ResponseEntity<>(errorResponse, status);
     }
 
     private String resolveDetailsKey(Exception ex) {
