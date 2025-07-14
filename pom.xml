@@ -150,13 +150,6 @@
 			<artifactId>spring-security-crypto</artifactId>
 		</dependency>
 
-
-		<dependency>
-			<groupId>com.example</groupId>
-			<artifactId>common-user-dto</artifactId>
-			<version>1.0.0</version>
-		</dependency>
-
 	</dependencies>
 
 	<build>
