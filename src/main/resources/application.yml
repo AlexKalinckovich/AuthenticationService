@@ -1,5 +1,6 @@
 server:
-  port: 8081
+  port: ${SPRING_APPLICATION_PORT}
+  address: ${SPRING_APPLICATION_ADDRESS:127.0.0.1}
 
 spring:
   config:
@@ -9,10 +10,12 @@ spring:
 
   datasource:
     name: authDataSource
-    url: jdbc:mysql://localhost:3307/authdb?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+    url: ${SPRING_DATASOURCE_URL}
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: authpassword
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    hikari:
+      auto-commit: false
 
   jpa:
     defer-datasource-initialization: true
@@ -25,3 +28,16 @@ spring:
 
   liquibase:
     change-log: classpath:db/changelog/changelog-master.xml
+
+cors:
+  pattern: ${CORS_ALLOWED_ORIGIN_PATTERN}
+  pattern-splitter: ${CORS_ALLOWED_ORIGIN_PATTERN_SPLITTER:,}
+
+controllers:
+  auth:
+    baseEndpoint: /auth
+    endpoints:
+      register: /register
+      login: /login
+      refresh: /refresh
+      validate: /validate

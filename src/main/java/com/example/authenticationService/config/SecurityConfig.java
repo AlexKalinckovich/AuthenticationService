@@ -8,6 +8,7 @@ import com.example.authenticationService.exception.security.authentication.Secur
 import com.example.authenticationService.security.JwtAuthFilter;
 import com.example.authenticationService.service.security.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,6 +21,10 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -27,7 +32,19 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private static final String FILTER_LOGIN_URL = "/auth/login";
+    private static final String ALL_ENDPOINTS = "/**";
+
+    @Value("${controllers.auth.baseEndpoint}")
+    private String authBaseEndpoint;
+
+    @Value("${controllers.auth.endpoints.login}")
+    private String loginRoute;
+
+    @Value("${cors.pattern}")
+    private String corsAllowedOriginPattern;
+
+    @Value("${cors.pattern-splitter}")
+    private String corsAllowedPatternSplitter;
 
     private final SecurityAuthenticationEntryPoint authenticationEntryPoint;
     private final SecurityAuthenticationFailureHandler authenticationFailureHandler;
@@ -37,17 +54,26 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
 
-
     private final JwtAuthFilter jwtAuthFilter;
 
     private LoginAuthenticationFilter loginFilter;
 
-    public void customFiltersInit(final HttpSecurity http) throws Exception {
-        loginFilter = new LoginAuthenticationFilter(FILTER_LOGIN_URL);
+    private void customFiltersInit(final HttpSecurity http) throws Exception {
+        loginFilter = new LoginAuthenticationFilter(authBaseEndpoint + loginRoute);
         loginFilter.setAuthenticationManager(authenticationManager(http));
         loginFilter.setAuthenticationFailureHandler(authenticationFailureHandler);
         loginFilter.setAuthenticationSuccessHandler(authenticationSuccessHandler);
     }
+
+    @Bean
+    protected CorsConfigurationSource corsConfigurationSource() {
+        final CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of(corsAllowedOriginPattern.split(corsAllowedPatternSplitter)));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PATCH"));
+        return request -> configuration;
+    }
+
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
@@ -55,16 +81,20 @@ public class SecurityConfig {
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(AbstractHttpConfigurer::disable)
+                .cors(cors ->
+                        cors.configurationSource(corsConfigurationSource()))
                 .exceptionHandling(handling -> handling
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
                 )
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers(authBaseEndpoint + ALL_ENDPOINTS).permitAll()
                         .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(
+                        session ->
+                                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAt(loginFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -80,6 +110,7 @@ public class SecurityConfig {
         builder
                 .userDetailsService(userDetailsService)
                 .passwordEncoder(passwordEncoder());
+
         return builder.build();
     }
 

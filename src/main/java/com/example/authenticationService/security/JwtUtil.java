@@ -5,6 +5,7 @@ import com.example.authenticationService.model.auth.UserCredentials;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Encoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,8 @@ public class JwtUtil {
 
     @PostConstruct
     public void initKey() {
-        this.key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
+        final String base64Secret = Encoders.BASE64.encode(jwtProperties.getSecret().getBytes());
+        this.key = Keys.hmacShaKeyFor(base64Secret.getBytes());
     }
 
     public AuthResponse generateTokens(final UserCredentials user,

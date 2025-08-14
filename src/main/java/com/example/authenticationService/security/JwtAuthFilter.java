@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,6 +27,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
 
+    @Value("${controllers.auth.baseEndpoint}")
+    private String authBaseEndpoint;
+
     @Autowired
     public JwtAuthFilter(final JwtUtil jwtUtil,
                          final UserDetailsService userDetailsService) {
@@ -38,7 +42,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     final @NotNull HttpServletResponse response,
                                     final @NotNull FilterChain filterChain) throws ServletException, IOException {
         final String requestURI = request.getRequestURI();
-        if (!requestURI.startsWith("/auth")) {
+        if (!requestURI.startsWith(authBaseEndpoint)) {
 
             final String authHeader = request.getHeader(AUTHORIZATION_HEADER);
             if (authHeader != null && authHeader.startsWith(BEARER_PREFIX)) {
