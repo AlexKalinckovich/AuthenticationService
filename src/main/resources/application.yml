@@ -17,6 +17,7 @@ spring:
     hikari:
       auto-commit: false
 
+
   jpa:
     defer-datasource-initialization: true
     hibernate:
@@ -41,3 +42,4 @@ controllers:
       login: /login
       refresh: /refresh
       validate: /validate
+      delete: /{id}

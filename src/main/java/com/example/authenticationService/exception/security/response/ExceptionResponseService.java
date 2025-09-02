@@ -1,57 +1,41 @@
 package com.example.authenticationService.exception.security.response;
 
-import com.example.authenticationService.exception.ErrorResponse;
 import com.example.authenticationService.messageConstants.ErrorMessage;
 import com.example.authenticationService.service.messages.MessageService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.jsonwebtoken.JwtException;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.WebRequest;
 
-import java.io.IOException;
 import java.time.Instant;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class ExceptionResponseService {
 
     private final MessageService messageService;
-    private final ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule());
 
-    public void handleException(
-            final HttpServletResponse response,
-            final Exception ex,
-            final HttpStatus status,
-            final ErrorMessage errorMessage,
-            final String requestPath
-    ) throws IOException {
-        final String detailsKey = resolveDetailsKey(ex);
-        final String detailsMessage = ex.getMessage() != null ?
-                ex.getMessage() : "No additional information";
+
+    @NotNull
+    public ResponseEntity<ErrorResponse> buildErrorResponse(
+            final @NotNull Exception ex,
+            final @NotNull WebRequest request,
+            final @NotNull HttpStatus status,
+            final @NotNull ErrorMessage errorCode
+    ) {
+        final ErrorDetails details = new SimpleErrorDetails(ex.getMessage());
 
         final ErrorResponse errorResponse = new ErrorResponse(
                 Instant.now(),
                 status.value(),
-                messageService.getMessage(errorMessage),
-                requestPath,
-                Map.of(detailsKey, detailsMessage)
+                errorCode.name(),
+                messageService.getMessage(errorCode),
+                request.getDescription(false),
+                details
         );
 
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setStatus(status.value());
-        response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
-    }
-
-    private String resolveDetailsKey(Exception ex) {
-        if (ex instanceof JwtException) {
-            return messageService.getMessage(ErrorMessage.JWT_ERROR);
-        }
-        return messageService.getMessage(ErrorMessage.ERROR_KEY);
+        return new ResponseEntity<>(errorResponse, status);
     }
 }

@@ -1,12 +1,9 @@
 package com.example.authenticationService.config;
 
-import com.example.authenticationService.exception.security.authentication.SecurityAuthenticationFailureHandler;
-import com.example.authenticationService.exception.security.authentication.SecurityAuthenticationSuccessHandler;
-import com.example.authenticationService.exception.security.login.LoginAuthenticationFilter;
-import com.example.authenticationService.exception.security.SecurityAccessDeniedHandler;
-import com.example.authenticationService.exception.security.authentication.SecurityAuthenticationEntryPoint;
+import com.example.authenticationService.exception.security.exceptions.CorsException;
 import com.example.authenticationService.security.JwtAuthFilter;
 import com.example.authenticationService.service.security.CustomUserDetailsService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +30,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private static final String ALL_ENDPOINTS = "/**";
+    private static final String ORIGIN_HEADER = "Origin";
 
     @Value("${controllers.auth.baseEndpoint}")
     private String authBaseEndpoint;
@@ -46,46 +44,42 @@ public class SecurityConfig {
     @Value("${cors.pattern-splitter}")
     private String corsAllowedPatternSplitter;
 
-    private final SecurityAuthenticationEntryPoint authenticationEntryPoint;
-    private final SecurityAuthenticationFailureHandler authenticationFailureHandler;
-    private final SecurityAuthenticationSuccessHandler authenticationSuccessHandler;
-
-    private final SecurityAccessDeniedHandler accessDeniedHandler;
-
     private final CustomUserDetailsService userDetailsService;
 
     private final JwtAuthFilter jwtAuthFilter;
 
-    private LoginAuthenticationFilter loginFilter;
-
-    private void customFiltersInit(final HttpSecurity http) throws Exception {
-        loginFilter = new LoginAuthenticationFilter(authBaseEndpoint + loginRoute);
-        loginFilter.setAuthenticationManager(authenticationManager(http));
-        loginFilter.setAuthenticationFailureHandler(authenticationFailureHandler);
-        loginFilter.setAuthenticationSuccessHandler(authenticationSuccessHandler);
-    }
 
     @Bean
     protected CorsConfigurationSource corsConfigurationSource() {
         final CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(corsAllowedOriginPattern.split(corsAllowedPatternSplitter)));
         configuration.setAllowedMethods(List.of("GET", "POST", "PATCH"));
-        return request -> configuration;
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        return (final HttpServletRequest request) -> {
+            final String origin = request.getHeader(ORIGIN_HEADER);
+            if (origin != null && !isOriginAllowed(origin)) {
+                throw new CorsException("CORS request rejected: Origin " + origin + " not allowed");
+            }
+            return configuration;
+        };
+    }
+
+    private boolean isOriginAllowed(final String origin) {
+        final List<String> allowedOrigins = List.of(corsAllowedOriginPattern.split(corsAllowedPatternSplitter));
+        return allowedOrigins.contains(origin) || allowedOrigins.contains("*");
     }
 
 
 
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
-        customFiltersInit(http);
 
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors ->
-                        cors.configurationSource(corsConfigurationSource()))
-                .exceptionHandling(handling -> handling
-                        .authenticationEntryPoint(authenticationEntryPoint)
-                        .accessDeniedHandler(accessDeniedHandler)
+                        cors.configurationSource(corsConfigurationSource())
                 )
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(authBaseEndpoint + ALL_ENDPOINTS).permitAll()
@@ -95,8 +89,7 @@ public class SecurityConfig {
                         session ->
                                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAt(loginFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

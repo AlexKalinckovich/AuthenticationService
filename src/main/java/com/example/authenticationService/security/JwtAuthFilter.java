@@ -1,5 +1,6 @@
 package com.example.authenticationService.security;
 
+import com.example.authenticationService.exception.security.exceptions.JwtAuthenticationException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,6 +24,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final String JWT_TOKEN_PARTS_SPLITTER = "\\.";
+
+    private static final int JWT_TOKEN_PARTS_COUNT = 3;
+
 
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
@@ -49,6 +54,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 final int bearerPrefixSize = BEARER_PREFIX.length();
 
                 final String token = authHeader.substring(bearerPrefixSize);
+
+                if (token.isBlank() || token.split(JWT_TOKEN_PARTS_SPLITTER).length != JWT_TOKEN_PARTS_COUNT) {
+                    throw new JwtAuthenticationException("Invalid token format");
+                }
+
+
                 final String username = jwtUtil.extractUsername(token);
 
                 final SecurityContext securityContext = SecurityContextHolder.getContext();
@@ -59,6 +70,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                         authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         securityContext.setAuthentication(authToken);
+                    }else{
+                        throw new JwtAuthenticationException("Invalid or expired token");
                     }
                 }
             }
