@@ -30,7 +30,7 @@ public enum ErrorMessage {
 
     private final String key;
 
-    ErrorMessage(String key) {
+    ErrorMessage(final String key) {
         this.key = key;
     }
 }
